@@ -4,15 +4,17 @@
 
 ## Recap on Self-Attention 
 
-![selfattention](/Users/shichengwen/Documents/USC/CSCI596/Project/selfattention.png)
+![selfattention](selfattention.png)
+
 $$
 \textbf{S} = \textbf{QK}^T\in\mathbb{R}^{N\times N}, \textbf{P} = \text{softmax}(\textbf{S})\in \mathbb{R}^{N\times N}, \textbf{O} = \textbf{PV}\in \mathbb{R}^{N\times d}
 $$
-![selfattention_alg](/Users/shichengwen/Documents/USC/CSCI596/Project/selfattention_alg.png)
+
+![selfattention_alg](selfattention_alg.png)
 
 Matrices S and P are large and need to be instantiated in HBM for storage, which will bring a lot of access times to HBM and ultimately reflect the long end-to-end delay of the algorithm time.
 
-![gpumem](/Users/shichengwen/Documents/USC/CSCI596/Project/gpumem.png)
+![gpumem](gpumem.png)
 
 
 
@@ -23,25 +25,32 @@ Matrices S and P are large and need to be instantiated in HBM for storage, which
 ## FlashAttention (Tiling)
 
 Original softmax:
+
 $$
 m(x):=\max _i x_i, \quad f(x):=\left[\begin{array}{lll}
 e^{x_1-m(x)} & \ldots & e^{x_B-m(x)}
-\end{array}\right], \quad \ell(x):=\sum_i f(x)_i, \quad \operatorname{softmax}(x):=\frac{f(x)}{\ell(x)}
+\end{array}\right], \quad \ell(x):=\sum_i f(x)_i, \quad \text{softmax}(x):=\frac{f(x)}{\ell(x)}
 $$
+
+
 Decomposed softmax:
+
+
 $$
 \begin{equation}
 \begin{aligned}
 & m(x)=m\left(\left[x^{(1)} x^{(2)}\right]\right)=\max \left(m\left(x^{(1)}\right), m\left(x^{(2)}\right)\right), \quad f(x)=\left[\begin{array}{ll}
 e^{m\left(x^{(1)}\right)-m(x)} f\left(x^{(1)}\right) & e^{m\left(x^{(2)}\right)-m(x)} f\left(x^{(2)}\right)
 \end{array}\right], \\
-& \ell(x)=\ell\left(\left[x^{(1)} x^{(2)}\right]\right)=e^{m\left(x^{(1)}\right)-m(x)} \ell\left(x^{(1)}\right)+e^{m\left(x^{(2)}\right)-m(x)} \ell\left(x^{(2)}\right), \quad \operatorname{softmax}(x)=\frac{f(x)}{\ell(x)} .
+& \ell(x)=\ell\left(\left[x^{(1)} x^{(2)}\right]\right)=e^{m\left(x^{(1)}\right)-m(x)} \ell\left(x^{(1)}\right)+e^{m\left(x^{(2)}\right)-m(x)} \ell\left(x^{(2)}\right), \quad \text{softmax}(x)=\frac{f(x)}{\ell(x)} .
 \end{aligned}
 \end{equation}
 $$
-Forward pass of FlashAttention, with tiling and softmax rescaling, they operate by blocks and avoid having to read/write from HBM, while obtaining the correct output with no approximation.
 
-![FlashAttention](/Users/shichengwen/Documents/USC/CSCI596/Project/FlashAttention.png)
+
+With the forward pass of FlashAttention, with tiling and softmax rescaling, they operate by blocks and avoid having to read/write from HBM, while obtaining the correct output with no approximation.
+
+![FlashAttention](FlashAttention.png)
 
 ## FlashAttention2
 
@@ -59,12 +68,12 @@ However, for scenarios involving long sequences, which typically correspond to s
 
 ### Better Work Partitioning
 
-Within each thread block, there is a still decision to be made about partitioning the work between different warps (a group of 32 threads working together). Typically, 4 or 8 warps per thread block are utilized, and the partitioning scheme is outlined below. The partitioning in FlashAttention-2 has been enhanced to minimize synchronization and communication between different warps, leading to fewer shared memory reads/writes.
+Within each thread block, there is still a decision to be made about partitioning the work between different warps (a group of 32 threads working together). Typically, 4 or 8 warps per thread block are utilized, and the partitioning scheme is outlined below. The partitioning in FlashAttention-2 has been enhanced to minimize synchronization and communication between different warps, leading to fewer shared memory reads/writes.
 
-![flash1vsflash2](/Users/shichengwen/Documents/USC/CSCI596/Project/flash1vsflash2.png)
+![flash1vsflash2](flash1vsflash2.png)
 
 In FlashAttention, each block divides K and V across four warps, maintaining Q access for all warps, a method known as the “sliced-K” scheme. This approach, however, is inefficient as all warps must write their intermediate results to shared memory, synchronize, and then combine these results. The extensive shared memory reads/writes in this process hinder the forward pass in FlashAttention.
 
 Conversely, FlashAttention-2 adopts a different strategy where Q is split among four warps, while K and V remain accessible to all warps. Following this, each warp performs a matrix multiplication to obtain a segment of QK^T, and then simply multiplies it with the shared segment of V to obtain their respective output segment. This eliminates the need for inter-warp communication. The reduction in shared memory reads/writes brought about by this new method results in a notable speedup.
 
-## Proposal FlashAttention with TransformerXL
+## Proposal FlashAttention with Other Attention Architecture
