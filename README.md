@@ -1,4 +1,4 @@
-# CSCI596 Final Project Exploring FlashAttention and Proposal
+# CSCI596 Final Project Exploring FlashAttention
 
 ## Recap on Self-Attention 
 
