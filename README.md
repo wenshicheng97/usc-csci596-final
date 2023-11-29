@@ -85,4 +85,4 @@ Longformer used global attention and local attention for longer sequences input,
 
 
 
-![longformer](longformer.png)
+<img src="longformer.png" width="50%" alt="longformer">
