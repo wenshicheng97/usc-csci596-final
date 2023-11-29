@@ -20,6 +20,8 @@ Matrices S and P are large and need to be instantiated in HBM for storage, which
 
 
 
+![gpt2perform](gpt2perform.png)
+
 
 
 ## FlashAttention (Tiling)
