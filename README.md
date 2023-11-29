@@ -83,3 +83,6 @@ Conversely, FlashAttention-2 adopts a different strategy where Q is split among 
 
 Longformer used global attention and local attention for longer sequences input, with FlashAttention reducing the computational cost, LongFormer may be able to capture longer input.
 
+
+
+![longformer](longformer.png)
