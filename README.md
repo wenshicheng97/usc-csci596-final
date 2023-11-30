@@ -2,7 +2,8 @@
 
 ## Recap on Self-Attention 
 
-<img src="selfattention.png" width="50%" alt="selfattention">
+<img src="attention_show.png" width="50%" alt="attention_show">
+
 
 $$
 \textbf{S} = \textbf{QK}^T\in\mathbb{R}^{N\times N}, \textbf{P} = \text{softmax}(\textbf{S})\in \mathbb{R}^{N\times N}, \textbf{O} = \textbf{PV}\in \mathbb{R}^{N\times d}
@@ -18,8 +19,11 @@ Matrices S and P are large and need to be instantiated in HBM for storage, which
 
 ## FlashAttention (Tiling)
 
-Original softmax:
+<img src="flashattention_show.png" width="50%" alt="flashattention_show">
 
+
+
+Original softmax:
 $$
 m(x):=\max _i x_i, \quad f(x):=\left[\begin{array}{lll}
 e^{x_1-m(x)} & \ldots & e^{x_B-m(x)}
@@ -79,7 +83,7 @@ In FlashAttention, each block divides K and V across four warps, maintaining Q a
 
 Conversely, FlashAttention-2 adopts a different strategy where Q is split among four warps, while K and V remain accessible to all warps. Following this, each warp performs a matrix multiplication to obtain a segment of QK^T, and then simply multiplies it with the shared segment of V to obtain their respective output segment. This eliminates the need for inter-warp communication. The reduction in shared memory reads/writes brought about by this new method results in a notable speedup.
 
-## Proposal FlashAttention with LongFormer
+## Exploration FlashAttention with LongFormer
 
 Longformer used global attention and local attention for longer sequences input, with FlashAttention reducing the computational cost, LongFormer may be able to capture longer input.
 
