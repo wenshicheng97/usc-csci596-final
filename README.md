@@ -24,6 +24,7 @@ Matrices S and P are large and need to be instantiated in HBM for storage, which
 
 
 Original softmax:
+
 $$
 m(x):=\max _i x_i, \quad f(x):=\left[\begin{array}{lll}
 e^{x_1-m(x)} & \ldots & e^{x_B-m(x)}
