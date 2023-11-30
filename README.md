@@ -83,10 +83,16 @@ In FlashAttention, each block divides K and V across four warps, maintaining Q a
 
 Conversely, FlashAttention-2 adopts a different strategy where Q is split among four warps, while K and V remain accessible to all warps. Following this, each warp performs a matrix multiplication to obtain a segment of QK^T, and then simply multiplies it with the shared segment of V to obtain their respective output segment. This eliminates the need for inter-warp communication. The reduction in shared memory reads/writes brought about by this new method results in a notable speedup.
 
-## Exploration FlashAttention with LongFormer
+## Exploring FlashAttention with LongFormer
 
 Longformer used global attention and local attention for longer sequences input, with FlashAttention reducing the computational cost, LongFormer may be able to capture longer input.
 
 
 
 <img src="longformer.png" width="50%" alt="longformer">
+
+
+
+### Adapting FlashAttention to Different GPU Architecture
+
+FlashAttention is sensitive to GPU architecture. Currently FlashAttention supports Ampere, Ada, or Hopper GPUs, such as A100 or H100 or RTX 4090, Turing GPUs or lower are not commonly supported. We will try to adapt FlashAttention to such GPU architecture for more generalized use.
