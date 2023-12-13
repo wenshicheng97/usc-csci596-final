@@ -1,4 +1,4 @@
-# CSCI596 Final Project Exploring FlashAttention
+# CSCI596 Final Project Proposal: Exploring FlashAttention and In-context Learning
 
 ## Recap on Self-Attention 
 
@@ -60,40 +60,21 @@ With the forward pass of FlashAttention, with tiling and softmax rescaling, they
 
 <img src="FlashAttention.png" width="75%" alt="FlashAttention">
 
-## FlashAttention2
+## Llama
 
-### Fewer non-matmul FLOPs
-
-The algorithm from FlashAttention has been modified to decrease the number of non-matrix multiplication (non-matmul) Floating Point Operations (FLOPs). This adjustment is crucial because modern GPUs, such as Nvidia's with Tensor Cores, are optimized for matrix multiplication operations, making them significantly faster. For instance, Nvidia's A100 GPU can achieve a maximum theoretical throughput of 312 TFLOPs per second for FP16/BF16 matrix multiplication, but only 19.5 TFLOPs per second for non-matrix multiplication FP32 operations. In practical terms, each non-matmul FLOP is approximately 16 times more costly than a matmul FLOP. To ensure high throughput, the focus is on maximizing the time spent on matrix multiplication FLOPs.
-
-Furthermore, the online softmax technique used in FlashAttention has been reworked. This revision aims to reduce the number of rescaling operations, along with boundary-checking and causal masking operations, all while maintaining the same output. This change further enhances the efficiency of the algorithm, aligning with the goal of reducing the reliance on more costly non-matmul FLOPs.
-
-### Better Parallelism
-
-In its initial version, FlashAttention achieves parallelization by dividing tasks based on the batch size and the number of attention heads. Each attention head is processed by one thread block, leading to a total of (batch_size * number of heads) thread blocks. These thread blocks are then allocated to run on streaming multiprocessors (SMs), with an example being the Nvidia A100 GPU which has 108 SMs. This method of scheduling proves efficient, especially when the number of thread blocks is large (e.g., 80 or more), allowing for nearly full utilization of the GPU's computational resources.
-
-However, for scenarios involving long sequences, which typically correspond to small batch sizes or a reduced number of heads, an additional layer of parallelization is introduced to better leverage the GPU multiprocessors. This is achieved by also parallelizing over the sequence length dimension. This enhancement leads to a significant speedup in such cases, optimizing the processing efficiency for long sequences where the initial parallelization approach may have been less effective.
-
-### Better Work Partitioning
-
-Within each thread block, there is still a decision to be made about partitioning the work between different warps (a group of 32 threads working together). Typically, 4 or 8 warps per thread block are utilized, and the partitioning scheme is outlined below. The partitioning in FlashAttention-2 has been enhanced to minimize synchronization and communication between different warps, leading to fewer shared memory reads/writes.
-
-<img src="flash1vsflash2.png" width="80%" alt="flash1vsflash2">
-
-In FlashAttention, each block divides K and V across four warps, maintaining Q access for all warps, a method known as the “sliced-K” scheme. This approach, however, is inefficient as all warps must write their intermediate results to shared memory, synchronize, and then combine these results. The extensive shared memory reads/writes in this process hinder the forward pass in FlashAttention.
-
-Conversely, FlashAttention-2 adopts a different strategy where Q is split among four warps, while K and V remain accessible to all warps. Following this, each warp performs a matrix multiplication to obtain a segment of QK^T, and then simply multiplies it with the shared segment of V to obtain their respective output segment. This eliminates the need for inter-warp communication. The reduction in shared memory reads/writes brought about by this new method results in a notable speedup.
-
-## Exploring FlashAttention with LongFormer
-
-Longformer used global attention and local attention for longer sequences input, with FlashAttention reducing the computational cost, LongFormer may be able to capture longer input.
+**LLaMA** is a transformer-based, open-sourced large language model. It has four versions, including 7B, 13B, 33B, and 65B. LLaMA-13B outperforms GPT-3 (175B) on most benchmarks, and LLaMA-65B is competitive with the state-of-the-art models Chinchilla-70B and PaLM-540B. With Pre-normalization, SwiGLU activation function, and Rotary Embeddings, LLaMA is trained on various datasets and performs as state-of-the-art in different tasks. More importantly, LLama supports float point 16 precision that reduces the weight and computational cost without losing performance. It is one of the best choices to deploy LLMs locally.
 
 
 
-<img src="longformer.png" width="50%" alt="longformer">
+## In-context Learning
+
+In-context learning has emerged as a novel attribute of large language models, enabling them to execute a variety of tasks based on a set of input-output examples, without the need for any parameter updates or fine-tuning. This feature has been demonstrated in major language models such as ChatGPT and LLaMA, garnering widespread attention in the research community. One area of study focuses on understanding the fundamental mechanisms and principles underlying contextual learning. For example, Xie et al. view contextual learning as implicit Bayesian inference, while Dai et al. interpret it as meta-optimization. Another area of research explores different strategies for selecting and designing contextual examples for large language models. Wang et al. proposed a novel training approach to model the interactions between contextual examples, determinantal processes and sequential decision-making are introduced as a preliminary exploration. In contrast, structured prompts break the limitation of input context length and expand the number of contextual examples to several thousands. Retrieval Augmented large language models combine the generative capabilities of large language models with the ability to retrieve relevant information from external sources. This paradigm has the potential to enhance the factual consistency of generated texts, enable large language models to understand up-to-date knowledge and provide a natural way for source attribution. For contextual learning, the goal of retrieval augmentation is to improve the performance of large language models on downstream tasks by enriching them with information-rich examples retrieved.
 
 
 
-### Adapting FlashAttention to Different GPU Architecture
+## Proposal
 
-FlashAttention is sensitive to GPU architecture. Currently FlashAttention supports Ampere, Ada, or Hopper GPUs, such as A100 or H100 or RTX 4090, Turing GPUs or lower are not commonly supported. We will try to adapt FlashAttention to such GPU architecture for more generalized use.
+Equipping Llama with FlashAttention for long document in-context learning.  See detailes in [proposal](CSCI596_Final_Proposal.pdf).
+
+
+
